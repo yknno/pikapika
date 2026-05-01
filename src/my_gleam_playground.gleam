@@ -45,11 +45,14 @@ fn view(model: Model) -> Element(Msg) {
         attribute.name("foo"),
       ]),
     ]),
+    view_model(model)
+  ])
+}
 
-    html.div([], [
-      html.text("Hello, "),
-      html.text(model),
-      html.text("!!!"),
-    ]),
+fn view_model(model: Model) -> Element(Msg) {
+  html.div([], [
+    html.text("Hello, "),
+    html.text(model),
+    html.text(" !!?"),
   ])
 }

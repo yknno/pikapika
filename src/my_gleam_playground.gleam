@@ -14,29 +14,50 @@ pub fn main() {
 }
 
 type Model {
-  Model(x: Int, y: Int)
+  Model(name: String, x: Int, y: Int)
 }
 
 fn init(_) -> Model {
-  Model(x: 0, y: 0)
+  Model(name: "Lucy", x: 0, y: 0)
 }
 
 type Message {
+  UserUpdateName(String)
   UserMovedMouse(x: Int, y: Int)
 }
 
-fn update(_, message: Message) -> Model {
+fn update(model: Model, message: Message) -> Model {
   case message {
-    UserMovedMouse(x:, y:) -> Model(x:, y:)
+    UserUpdateName(name) -> Model(..model, name:)
+    UserMovedMouse(x:, y:) -> Model(..model, x:, y:)
   }
 }
 
 fn view(model: Model) -> Element(Message) {
-  html.div(
-    [attribute.class("w-screen h-screen flex justify-center items-center")],
-    [view_xy_pad(x: model.x, y: model.y, on_mousemove: UserMovedMouse)],
-  )
+  html.div([attribute.class("p-32 mx-auto w-full max-w-2x1 space-y-8")], [
+    view_debounced_input(name: model.name, on_input: UserUpdateName),
+    view_xy_pad(x: model.x, y: model.y, on_mousemove: UserMovedMouse),
+  ])
 }
+
+fn view_debounced_input(
+  name name: String,
+  on_input handle_input: fn(String) -> message,
+) -> Element(message) {
+  html.div([attribute.class("space-y-2")], [
+    html.label([attribute.class("flex gap-2")], [
+      html.span([], [html.text("Enter a name:")]),
+      html.input([
+        attribute.value(name),
+        event.on_input(handle_input) |> event.debounce(500),
+        attribute.class("border border-slate-400 px-1 rounded"),
+        attribute.class("focus:outline-none focus:border-blue-500"),
+      ])
+    ]),
+    html.p([], [html.text("Hello there, "), html.text(name), html.text("!")]),
+  ])
+}
+
 
 fn view_xy_pad(
   x x: Int,
@@ -53,9 +74,10 @@ fn view_xy_pad(
 
   html.div(
     [
-      on_mousemove,
+      // on_mousemove |> event.throttle(250),
+      on_mousemove |> event.debounce(250),
       attribute.class("flex justify-center items-center"),
-      attribute.class("size-64 bg-slate-100 rounded hover:shadow"),
+      attribute.class("aspect-square bg-slate-100 rounded hover:shadow"),
     ],
     [
       html.p([attribute.class("font-mono font-semibold text-slate-400")], [

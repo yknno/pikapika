@@ -91,7 +91,11 @@ fn view_todo_form(form: Form(TodoInput)) -> Element(Message) {
   let errors = form.field_error_messages(form, "text")
 
   html.form([event.on_submit(handle_submit)], [
-    html.input([attribute.id("text"), attribute.name("text")]),
+    html.input([
+      attribute.id("text"),
+      attribute.name("text"),
+      attribute.value(form.field_value(form, "text")),
+    ]),
     html.button([], [html.text("追加")]),
     ..list.map(errors, fn(error_message) {
       html.p([], [html.text(error_message)])

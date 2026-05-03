@@ -1,4 +1,4 @@
-// import formal/form.{type Form}
+import formal/form.{type Form}
 import gleam/list
 import lustre
 import lustre/attribute
@@ -14,7 +14,11 @@ pub fn main() {
 }
 
 type Model {
-  Model(todos: List(TodoItem), new_todo: String)
+  Model(todos: List(TodoItem), form: Form(TodoInput))
+}
+
+type TodoInput {
+  TodoInput(text: String)
 }
 
 type TodoItem {
@@ -23,8 +27,7 @@ type TodoItem {
 
 type Message {
   UserToggledTodo(index: Int)
-  UserUpdatedInput(text: String)
-  UserSubmitForm
+  UserSubmitForm(Result(TodoInput, Form(TodoInput)))
 }
 
 fn init(_) -> Model {
@@ -34,8 +37,16 @@ fn init(_) -> Model {
       TodoItem(text: "two", done: False),
       TodoItem(text: "three", done: True),
     ],
-    new_todo: "",
+    form: new_form(),
   )
+}
+
+fn new_form() -> Form(TodoInput) {
+  form.new({
+    use text <- form.field("text", form.parse_string |> form.check_not_empty)
+
+    form.success(TodoInput(text:))
+  })
 }
 
 fn update(model: Model, message: Message) -> Model {
@@ -50,31 +61,41 @@ fn update(model: Model, message: Message) -> Model {
         })
       Model(..model, todos: new_todos)
     }
-    UserUpdatedInput(text) -> {
-      Model(..model, new_todo: text)
+    UserSubmitForm(Ok(TodoInput(text:))) -> {
+      Model(
+        todos: list.append(model.todos, [TodoItem(text:, done: False)]),
+        form: new_form(),
+      )
     }
-    UserSubmitForm -> {
-      case model.new_todo {
-        "" -> model
-        text -> Model(
-          todos: list.append(model.todos, [TodoItem(text:, done: False)]),
-          new_todo: ""
-        )
-      }
+    UserSubmitForm(Error(form)) -> {
+      Model(..model, form:)
     }
   }
 }
 
 fn view(model: Model) -> Element(Message) {
   html.div([], [
-    html.form([event.on_submit(fn(_) { UserSubmitForm })], [
-      html.input([
-        attribute.value(model.new_todo),
-        event.on_input(UserUpdatedInput),
-      ]),
-      html.button([attribute.type_("submit")], [html.text("追加")]),
-    ]),
-    html.ul([], { list.index_map(model.todos, view_todo) })
+    view_todo_form(model.form),
+    html.ul([], { list.index_map(model.todos, view_todo) }),
+  ])
+}
+
+fn view_todo_form(form: Form(TodoInput)) -> Element(Message) {
+  let handle_submit = fn(values) {
+    form
+    |> form.add_values(values)
+    |> form.run
+    |> UserSubmitForm
+  }
+
+  let errors = form.field_error_messages(form, "text")
+
+  html.form([event.on_submit(handle_submit)], [
+    html.input([attribute.id("text"), attribute.name("text")]),
+    html.button([], [html.text("追加")]),
+    ..list.map(errors, fn(error_message) {
+      html.p([], [html.text(error_message)])
+    })
   ])
 }
 

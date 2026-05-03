@@ -1,4 +1,4 @@
-import formal/form.{type Form}
+// import formal/form.{type Form}
 import gleam/list
 import lustre
 import lustre/attribute
@@ -14,146 +14,81 @@ pub fn main() {
 }
 
 type Model {
-  Login(Form(LoginData))
-  LoggedIn(username: String)
+  Model(todos: List(TodoItem), new_todo: String)
 }
 
-type LoginData {
-  LoginData(username: String, password: String)
-}
-
-fn init(_) -> Model {
-  Login(new_login_form())
-}
-
-fn new_login_form() -> Form(LoginData) {
-  form.new({
-    use username <- form.field(
-      "username",
-      form.parse_string |> form.check_not_empty,
-    )
-
-    let check_password = fn(password) {
-      case password == "xxxxxxx" {
-        True -> Ok(password)
-        False -> Error("Password not valid")
-      }
-    }
-
-    use password <- form.field(
-      "password",
-      form.parse_string |> form.check(check_password),
-    )
-
-    form.success(LoginData(username:, password:))
-  })
+type TodoItem {
+  TodoItem(text: String, done: Bool)
 }
 
 type Message {
-  UserSubmittedForm(Result(LoginData, Form(LoginData)))
+  UserToggledTodo(index: Int)
+  UserUpdatedInput(text: String)
+  UserSubmitForm
 }
 
-fn update(_model: Model, message: Message) -> Model {
+fn init(_) -> Model {
+  Model(
+    todos: [
+      TodoItem(text: "one", done: False),
+      TodoItem(text: "two", done: False),
+      TodoItem(text: "three", done: True),
+    ],
+    new_todo: "",
+  )
+}
+
+fn update(model: Model, message: Message) -> Model {
   case message {
-    UserSubmittedForm(Ok(LoginData(username:, ..))) -> {
-      LoggedIn(username:)
+    UserToggledTodo(target) -> {
+      let new_todos =
+        list.index_map(model.todos, fn(todoitem, i) {
+          case i == target {
+            True -> TodoItem(..todoitem, done: !todoitem.done)
+            False -> todoitem
+          }
+        })
+      Model(..model, todos: new_todos)
     }
-    UserSubmittedForm(Error(form)) -> {
-      Login(form)
+    UserUpdatedInput(text) -> {
+      Model(..model, new_todo: text)
+    }
+    UserSubmitForm -> {
+      case model.new_todo {
+        "" -> model
+        text -> Model(
+          todos: list.append(model.todos, [TodoItem(text:, done: False)]),
+          new_todo: ""
+        )
+      }
     }
   }
 }
 
 fn view(model: Model) -> Element(Message) {
-  html.div(
-    [attribute.class("p-32 mx-auto w-full max-w-2xl space-y-4")],
-    case model {
-      Login(form) -> [view_login(form)]
-      LoggedIn(username:) -> [view_loggedin(username)]
-    },
-  )
-}
-
-fn view_loggedin(username: String) {
-  element.fragment([
-    html.h1([attribute.class("text-2xl font-medium")], [
-      html.text("Welcome, "),
-      html.span([attribute.class("text-purple-600 font-bold")], [
-        html.text(username),
+  html.div([], [
+    html.form([event.on_submit(fn(_) { UserSubmitForm })], [
+      html.input([
+        attribute.value(model.new_todo),
+        event.on_input(UserUpdatedInput),
       ]),
-      html.text("!"),
+      html.button([attribute.type_("submit")], [html.text("追加")]),
     ]),
-    html.p([], [html.text("I hope you're having a lovely day!")]),
+    html.ul([], { list.index_map(model.todos, view_todo) })
   ])
 }
 
-fn view_login(form: Form(LoginData)) -> Element(Message) {
-  let handle_submit = fn(values) {
-    form |> form.add_values(values) |> form.run |> UserSubmittedForm
-  }
-
-  html.form(
-    [
-      attribute.class("p-8 w-full border rounded-2xl shadow-lg space-y-4"),
-      event.on_submit(handle_submit),
-    ],
-    [
-      html.h1([attribute.class("text-2xl font-medium text-purple-600")], [
-        html.text("Sign in"),
-      ]),
-      view_input(form, is: "text", name: "username", label: "Username"),
-      view_input(form, is: "password", name: "password", label: "Password"),
-      html.div([attribute.class("flex justify-end")], [
-        html.button(
-          [
-            attribute.class("text-white text-sm font-bold"),
-            attribute.class("px-4 py-2 bg-purple-600 rounded-lg"),
-            attribute.class("hover:bg-purple-800"),
-            attribute.class(
-              "focus:outline-2 focus:outline-offset-2 focus:outline-purple-800",
-            ),
-          ],
-          [html.text("Login")],
-        ),
-      ]),
-    ],
-  )
-}
-
-fn view_input(
-  form: Form(LoginData),
-  is type_: String,
-  name name: String,
-  label label: String,
-) -> Element(message) {
-  let errors = form.field_error_messages(form, name)
-
+fn view_todo(todoitem: TodoItem, index: Int) -> Element(Message) {
   html.div([], [
-    html.label(
-      [attribute.for(name), attribute.class("text-xs font-bold text-slate-600")],
-      [html.text(label), html.text(": ")],
-    ),
+    case todoitem.done {
+      True -> html.span([], [html.text("done")])
+      False -> html.span([], [html.text("todo?")])
+    },
+    html.p([], [html.text(todoitem.text)]),
     html.input([
-      attribute.type_(type_),
-      attribute.class(
-        "block mt-1 w-full px-3 py-1 border rounded-lg focus:shadow",
-      ),
-      case errors {
-        [] -> attribute.class("focus:outline focus:outline-purple-600")
-        _ -> attribute.class("outline outline-red-500")
-      },
-      // we use the `id` in the associated `for` attribute on the label.
-      attribute.id(name),
-      // the `name` attribute is used as the first element of the tuple
-      // we receive for this input.
-      attribute.name(name),
+      attribute.type_("checkbox"),
+      attribute.checked(todoitem.done),
+      event.on_click(UserToggledTodo(index)),
     ]),
-    // formal provides us with customisable error messages for every element
-    // in case its validation fails, which we can show right below the input.
-    ..list.map(errors, fn(error_message) {
-      html.p([attribute.class("mt-0.5 text-xs text-red-500")], [
-        html.text(error_message),
-      ])
-    })
   ])
 }

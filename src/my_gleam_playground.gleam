@@ -109,11 +109,13 @@ fn view_todo(todoitem: TodoItem, index: Int) -> Element(Message) {
       True -> html.span([], [html.text("done")])
       False -> html.span([], [html.text("todo?")])
     },
-    html.p([], [html.text(todoitem.text)]),
-    html.input([
-      attribute.type_("checkbox"),
-      attribute.checked(todoitem.done),
-      event.on_click(UserToggledTodo(index)),
+    html.label([], [
+      html.input([
+        attribute.type_("checkbox"),
+        attribute.checked(todoitem.done),
+        event.on_check(fn(_) { UserToggledTodo(index) }),
+      ]),
+      html.text(todoitem.text),
     ]),
   ])
 }

@@ -27,7 +27,7 @@ type TodoItem {
 
 type Message {
   UserToggledTodo(index: Int)
-  UserSubmitForm(Result(TodoInput, Form(TodoInput)))
+  UserSubmitForm(result: Result(TodoInput, Form(TodoInput)))
 }
 
 fn init(_) -> Model {

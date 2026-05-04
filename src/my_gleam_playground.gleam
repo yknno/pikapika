@@ -144,7 +144,7 @@ fn view_todo(todoitem: TodoItem, index: Int) -> Element(Message) {
     False -> "flex-1 text-gray-800"
   }
 
-  html.div([attribute.class("flex items-center gap-3 px-3 py-2")], [
+  html.li([attribute.class("flex items-center gap-3 px-3 py-2")], [
     case todoitem.done {
       True ->
         html.span([attribute.class("text-xs text-gray-400 w-10 shrink-0")], [

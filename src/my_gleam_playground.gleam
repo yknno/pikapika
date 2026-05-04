@@ -63,7 +63,7 @@ fn update(model: Model, message: Message) -> Model {
     }
     UserSubmitForm(Ok(TodoInput(text:))) -> {
       Model(
-        todos: list.append(model.todos, [TodoItem(text:, done: False)]),
+        todos: [TodoItem(text:, done: False), ..model.todos],
         form: new_form(),
       )
     }

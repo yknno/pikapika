@@ -140,23 +140,13 @@ fn view_todo_form(form_state: Form(TodoInput)) -> Element(Message) {
 
 fn view_todo(todoitem: TodoItem, index: Int) -> Element(Message) {
   let text_class = case todoitem.done {
-    True -> "flex-1 text-gray-400 line-through"
-    False -> "flex-1 text-gray-800"
+    True -> "text-gray-400 line-through"
+    False -> "text-gray-800"
   }
 
-  html.li([attribute.class("flex items-center gap-3 px-3 py-2")], [
-    case todoitem.done {
-      True ->
-        html.span([attribute.class("text-xs text-gray-400 w-10 shrink-0")], [
-          html.text("done"),
-        ])
-      False ->
-        html.span([attribute.class("text-xs text-gray-500 w-10 shrink-0")], [
-          html.text("todo?"),
-        ])
-    },
+  html.li([attribute.class("px-3 py-2")], [
     html.label(
-      [attribute.class("flex flex-1 items-center gap-2 cursor-pointer")],
+      [attribute.class("flex items-center gap-2 cursor-pointer")],
       [
         html.input([
           attribute.type_("checkbox"),

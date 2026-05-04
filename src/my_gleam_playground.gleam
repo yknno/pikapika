@@ -78,7 +78,7 @@ fn view(model: Model) -> Element(Message) {
     view_todo_form(model.form),
     html.ul(
       [attribute.class("rounded border border-gray-200 divide-y divide-gray-200")],
-      { list.index_map(model.todos, view_todo) },
+      list.index_map(model.todos, view_todo),
     ),
   ])
 }

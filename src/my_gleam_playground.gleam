@@ -93,41 +93,48 @@ fn view_todo_form(form_state: Form(TodoInput)) -> Element(Message) {
 
   let errors = form.field_error_messages(form_state, "text")
 
+  let error_elements =
+    list.map(errors, fn(error_message) {
+      html.p([attribute.class("text-sm text-red-600")], [
+        html.text(error_message),
+      ])
+    })
+
   html.form(
     [
       event.on_submit(handle_submit),
-      attribute.class("flex flex-wrap items-end gap-2"),
+      attribute.class("flex flex-col gap-2"),
     ],
-    [
-      html.label(
-        [
-          attribute.for("text"),
-          attribute.class("w-full text-sm font-medium text-gray-700"),
-        ],
-        [html.text("やること")],
-      ),
-      html.input([
-        attribute.id("text"),
-        attribute.name("text"),
-        attribute.value(form.field_value(form_state, "text")),
-        attribute.class(
-          "flex-1 min-w-0 rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500",
+    list.flatten([
+      [
+        html.label(
+          [
+            attribute.for("text"),
+            attribute.class("text-sm font-medium text-gray-700"),
+          ],
+          [html.text("やること")],
         ),
-      ]),
-      html.button(
-        [
+        html.input([
+          attribute.id("text"),
+          attribute.name("text"),
+          attribute.value(form.field_value(form_state, "text")),
           attribute.class(
-            "rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700",
+            "rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500",
           ),
-        ],
-        [html.text("追加")],
-      ),
-      ..list.map(errors, fn(error_message) {
-        html.p([attribute.class("w-full text-sm text-red-600")], [
-          html.text(error_message),
-        ])
-      })
-    ],
+        ]),
+      ],
+      error_elements,
+      [
+        html.button(
+          [
+            attribute.class(
+              "self-start rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700",
+            ),
+          ],
+          [html.text("追加")],
+        ),
+      ],
+    ]),
   )
 }
 

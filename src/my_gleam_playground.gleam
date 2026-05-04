@@ -1,10 +1,16 @@
 import formal/form.{type Form}
+import gleam/int
 import gleam/list
 import lustre
 import lustre/attribute
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
+
+fn fresh_id() -> String {
+  let assert Ok(s) = int.to_base_string(int.random(2_000_000_000), 36)
+  s
+}
 
 pub fn main() {
   let app = lustre.simple(init, update, view)
@@ -22,20 +28,21 @@ type TodoInput {
 }
 
 type TodoItem {
-  TodoItem(text: String, done: Bool)
+  TodoItem(id: String, text: String, done: Bool)
 }
 
 type Message {
-  UserToggledTodo(index: Int)
+  UserToggledTodo(id: String)
+  UserDeletedTodo(id: String)
   UserSubmitForm(result: Result(TodoInput, Form(TodoInput)))
 }
 
 fn init(_) -> Model {
   Model(
     todos: [
-      TodoItem(text: "one", done: False),
-      TodoItem(text: "two", done: False),
-      TodoItem(text: "three", done: True),
+      TodoItem(id: fresh_id(), text: "one", done: False),
+      TodoItem(id: fresh_id(), text: "two", done: False),
+      TodoItem(id: fresh_id(), text: "three", done: True),
     ],
     form: new_form(),
   )
@@ -53,17 +60,25 @@ fn update(model: Model, message: Message) -> Model {
   case message {
     UserToggledTodo(target) -> {
       let new_todos =
-        list.index_map(model.todos, fn(todoitem, i) {
-          case i == target {
+        list.map(model.todos, fn(todoitem) {
+          case todoitem.id == target {
             True -> TodoItem(..todoitem, done: !todoitem.done)
             False -> todoitem
           }
         })
       Model(..model, todos: new_todos)
     }
+    UserDeletedTodo(target) -> {
+      let new_todos =
+        list.filter(model.todos, fn(todoitem) { todoitem.id != target })
+      Model(..model, todos: new_todos)
+    }
     UserSubmitForm(Ok(TodoInput(text:))) -> {
       Model(
-        todos: [TodoItem(text:, done: False), ..model.todos],
+        todos: [
+          TodoItem(id: fresh_id(), text:, done: False),
+          ..model.todos
+        ],
         form: new_form(),
       )
     }
@@ -78,7 +93,7 @@ fn view(model: Model) -> Element(Message) {
     view_todo_form(model.form),
     html.ul(
       [attribute.class("rounded border border-gray-200 divide-y divide-gray-200")],
-      list.index_map(model.todos, view_todo),
+      list.map(model.todos, view_todo),
     ),
   ])
 }
@@ -138,24 +153,32 @@ fn view_todo_form(form_state: Form(TodoInput)) -> Element(Message) {
   )
 }
 
-fn view_todo(todoitem: TodoItem, index: Int) -> Element(Message) {
+fn view_todo(todoitem: TodoItem) -> Element(Message) {
   let text_class = case todoitem.done {
     True -> "text-gray-400 line-through"
     False -> "text-gray-800"
   }
 
-  html.li([attribute.class("px-3 py-2")], [
+  html.li([attribute.class("flex items-center gap-3 px-3 py-2")], [
     html.label(
-      [attribute.class("flex items-center gap-2 cursor-pointer")],
+      [attribute.class("flex flex-1 items-center gap-2 cursor-pointer")],
       [
         html.input([
           attribute.type_("checkbox"),
           attribute.checked(todoitem.done),
           attribute.class("h-4 w-4 accent-blue-600"),
-          event.on_check(fn(_) { UserToggledTodo(index) }),
+          event.on_check(fn(_) { UserToggledTodo(todoitem.id) }),
         ]),
         html.span([attribute.class(text_class)], [html.text(todoitem.text)]),
       ],
+    ),
+    html.button(
+      [
+        attribute.type_("button"),
+        event.on_click(UserDeletedTodo(todoitem.id)),
+        attribute.class("text-sm text-gray-400 hover:text-red-600"),
+      ],
+      [html.text("削除")],
     ),
   ])
 }

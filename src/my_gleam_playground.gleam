@@ -80,21 +80,21 @@ fn view(model: Model) -> Element(Message) {
   ])
 }
 
-fn view_todo_form(form: Form(TodoInput)) -> Element(Message) {
+fn view_todo_form(form_state: Form(TodoInput)) -> Element(Message) {
   let handle_submit = fn(values) {
-    form
+    form_state
     |> form.add_values(values)
     |> form.run
     |> UserSubmitForm
   }
 
-  let errors = form.field_error_messages(form, "text")
+  let errors = form.field_error_messages(form_state, "text")
 
   html.form([event.on_submit(handle_submit)], [
     html.input([
       attribute.id("text"),
       attribute.name("text"),
-      attribute.value(form.field_value(form, "text")),
+      attribute.value(form.field_value(form_state, "text")),
     ]),
     html.button([], [html.text("追加")]),
     ..list.map(errors, fn(error_message) {

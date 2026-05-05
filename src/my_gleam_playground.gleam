@@ -75,10 +75,7 @@ fn update(model: Model, message: Message) -> Model {
     }
     UserSubmitForm(Ok(TodoInput(text:))) -> {
       Model(
-        todos: [
-          TodoItem(id: fresh_id(), text:, done: False),
-          ..model.todos
-        ],
+        todos: [TodoItem(id: fresh_id(), text:, done: False), ..model.todos],
         form: new_form(),
       )
     }
@@ -92,7 +89,11 @@ fn view(model: Model) -> Element(Message) {
   html.div([attribute.class("max-w-md mx-auto p-6 space-y-4")], [
     view_todo_form(model.form),
     html.ul(
-      [attribute.class("rounded border border-gray-200 divide-y divide-gray-200")],
+      [
+        attribute.class(
+          "rounded border border-gray-200 divide-y divide-gray-200",
+        ),
+      ],
       list.map(model.todos, view_todo),
     ),
   ])
